@@ -1,0 +1,11 @@
+[Unit]
+Description=Create the loop0 device for the vg rhel
+Wants=microshift.service
+Before=microshift.service
+
+[Service]
+Type=oneshot
+ExecStart=losetup /dev/loop0 /tmp/diskvol0.img
+
+[Install]
+WantedBy=multi-user.target

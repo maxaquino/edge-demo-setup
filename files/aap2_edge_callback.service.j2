@@ -1,0 +1,12 @@
+[Unit]
+Description=Callback to Ansible Automation Platform
+Wants=microshift.service
+After=microshift.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/aap2_edge_callback.sh
+ExecStartPost=/usr/bin/systemctl disable aap2_edge_callback
+
+[Install]
+WantedBy=multi-user.target

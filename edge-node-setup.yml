@@ -1,0 +1,230 @@
+---
+- name: Edge demo setup
+  hosts: all
+  remote_user: ec2-user
+  become: true
+
+  vars_prompt:
+
+    - name: subscription_username
+      prompt: RHSM username
+      private: false
+
+    - name: subscription_password
+      prompt: RHSM password
+
+    - name: openshift_pull_secret
+      prompt: OpenShift Pull Secret
+      private: false
+
+  tasks:
+
+    - name: Check CONTROLLER_HOST env variable
+      ansible.builtin.fail:
+        msg: The CONTROLLER_HOST env variable is not defined
+      when: not lookup('ansible.builtin.env', 'CONTROLLER_HOST')
+
+    - name: Check CONTROLLER_USERNAME env variable
+      ansible.builtin.fail:
+        msg: The CONTROLLER_USERNAME env variable is not defined
+      when: not lookup('ansible.builtin.env', 'CONTROLLER_USERNAME')
+
+    - name: Check CONTROLLER_PASSWORD env variable
+      ansible.builtin.fail:
+        msg: The CONTROLLER_PASSWORD env variable is not defined
+      when: not lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD')
+
+    - name: Get Ansible inventory id for Edge
+      ansible.builtin.uri:
+        url: "{{ controller_host }}/api/v2/inventories/"
+        user: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
+        method: GET
+        force_basic_auth: yes
+        validate_certs: false
+        headers:
+          Content-Type: application/json
+      register: inventory
+
+    - set_fact:
+        inventory_id={{ ( inventory | community.general.json_query('json.results[?name==`Edge Inventory`].id') )[0] }}
+
+    - name: Debug inventory
+      ansible.builtin.debug:
+        var: inventory_id
+
+    #    - meta: end_play
+
+    - name: Get Ansible job template id for Edge
+      ansible.builtin.uri:
+        url: "{{ controller_host }}/api/v2/job_templates/"
+        user: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
+        method: GET
+        force_basic_auth: yes
+        validate_certs: false
+        headers:
+          Content-Type: application/json
+      register: jobtemplate
+
+    - set_fact:
+        jobtemplate_id={{ ( jobtemplate | community.general.json_query('json.results[?name==`Edge Demo`].id') )[0] }}
+
+    - name: Debug job template
+      ansible.builtin.debug:
+        var: jobtemplate_id
+
+    - name: register with subscription-manager
+      community.general.redhat_subscription:
+        state: present
+        username: "{{ subscription_username }}"
+        password: "{{ subscription_password }}"
+        #auto_attach: true
+      tags:
+        - register
+
+    - name: Enable subscription-manager repository
+      ansible.builtin.shell: "subscription-manager config --rhsm.manage_repos=1"
+
+    - name: Upgrade all packages
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+        #exclude: kernel*,foo*
+      tags: [ update ]
+
+    - name: Reboot the machine (Wait for 5 min)
+      reboot:
+        reboot_timeout: 300
+      tags: [ update ]
+
+    - name: Enable repositories
+      community.general.rhsm_repository:
+        name:
+          #- "rhocp-{{ ocp_version }}-for-rhel-8-x86_64-rpms"
+          - "rhocp-4.11-for-rhel-8-x86_64-rpms" # Necessario perche' 4.12 restituisce un errore
+          - fast-datapath-for-rhel-8-x86_64-rpms
+
+    # Enable copr for microshift
+    - name: Enable copr for microshift
+      community.general.copr:
+        state: enabled
+        name: '@redhat-et/microshift-testing'
+        chroot: epel-8-x86_64
+
+    - name: Install microshift and other packages
+      ansible.builtin.dnf:
+        name:
+          - microshift
+          - openshift-clients
+          - lvm2        # Required for microshift to start (topolvm pods)
+          - jq
+          - iptables
+          - bind-utils
+          - python3-pip
+        state: present
+        disable_gpg_check: true
+
+    # Sometime it seems is not required because the KeyPaths with multiple keys works.
+    # To test, try to pull an image with crictl (crictl pull busybox) to see if it returns an error on the KeyPaths
+    - name: Fix KeyPaths issue
+      ansible.builtin.replace:
+        path: '{{ policy_file }}'
+        regexp: '^(.*)"keyPaths.*'
+        replace: '\1"keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"'
+      tags: [ replace ]
+
+#    - meta: end_play
+
+    - name: Copy the openshift pull secret
+      ansible.builtin.copy:
+        content: '{{ openshift_pull_secret }}'
+        dest: '{{ crio_dir }}/openshift-pull-secret'
+        mode: 0600
+
+    - name: Creating a fake vg rhel for microshift
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - losetup -d /dev/loop0
+        - dd if=/dev/zero of=/tmp/diskvol0.img bs=1024 count=102400
+        - losetup /dev/loop0 /tmp/diskvol0.img
+      ignore_errors: true
+
+    - name: Create a rhel volume group on top of /dev/loop0
+      community.general.lvg:
+        vg: rhel
+        pvs: /dev/loop0
+        force: true
+
+    #- meta: end_play
+
+    - name: Enable crio and microshift
+      ansible.builtin.systemd:
+        name: '{{ item }}'
+        state: restarted
+        enabled: yes
+      loop:
+        - crio
+        - microshift
+
+    - name: Create the .kube directory if it does not exist
+      ansible.builtin.file:
+        path: $HOME/.kube
+        state: directory
+
+    - name: Touch the config file
+      ansible.builtin.file:
+        path: '{{ kubeconfig_file }}'
+        #state: directory
+        state: touch
+
+    - name: Pause for 5 seconds
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Copy the kubeconfig file
+      ansible.builtin.shell: "cat {{ microshift_kubeconfig_file }} > {{ kubeconfig_file }}"
+
+    - name: Unregister with subscription-manager
+      community.general.redhat_subscription:
+        state: absent
+        username: "{{ subscription_username }}"
+        password: "{{ subscription_password }}"
+      #tags: [ never ]
+
+    - name: Generate the aap2 callback service
+      template:
+        src: files/aap2_edge_callback.service.j2
+        dest: /etc/systemd/system/aap2_edge_callback.service
+        owner: root
+        group: root
+
+    - name: Generate the aap2 callback script
+      template:
+        src: files/aap2_edge_callback.sh.j2
+        dest: /usr/local/bin/aap2_edge_callback.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Systemd service for loop0, workaround to have rhel vg available after reboot
+      template:
+        src: files/create_loop0.service.j2
+        dest: /etc/systemd/system/create_loop0.service
+        owner: root
+        group: root
+
+    - name: Enable aap2 callback and loop0 services
+      ansible.builtin.systemd:
+        name: '{{ item }}'
+        enabled: yes
+      loop:
+        - aap2_edge_callback
+        - create_loop0
+
+    - meta: end_play
+
+    - name: Last reboot to run the ansible playbook and import the cluster to RHACM (Wait for 5 min)
+      reboot:
+        reboot_timeout: 300
+

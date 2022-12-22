@@ -1,0 +1,2 @@
+#<ec2-instance> ansible_user=ec2-user ansible_ssh_private_key_file=files/edge-key.pem
+ec2-18-159-109-56.eu-central-1.compute.amazonaws.com ansible_user=ec2-user ansible_ssh_private_key_file=files/edge-key.pem

@@ -1,0 +1,114 @@
+- name: "Setup Ansible Automation Platform for the Edge Demo"
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+  - name: Check CONTROLLER_HOST env variable
+    ansible.builtin.fail:
+      msg: The CONTROLLER_HOST env variable is not defined
+    when: not lookup('ansible.builtin.env', 'CONTROLLER_HOST')
+
+  - name: Check CONTROLLER_USERNAME env variable
+    ansible.builtin.fail:
+      msg: The CONTROLLER_USERNAME env variable is not defined
+    when: not lookup('ansible.builtin.env', 'CONTROLLER_USERNAME')
+
+  - name: Check CONTROLLER_PASSWORD env variable
+    ansible.builtin.fail:
+      msg: The CONTROLLER_PASSWORD env variable is not defined
+    when: not lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD')
+
+  - name: Check CONTROLLER_TOKEN env variable
+    ansible.builtin.fail:
+      msg: The CONTROLLER_TOKEN env variable is not defined
+    when: not lookup('ansible.builtin.env', 'CONTROLLER_TOKEN')
+
+  - name: Check CONTROLLER_VERIFY_SSL env variable
+    ansible.builtin.fail:
+      msg: The CONTROLLER_VERIFY_SSL env variable is not defined
+    when: not lookup('ansible.builtin.env', 'CONTROLLER_VERIFY_SSL')
+
+  - name: Check RHACM_API env variable
+    ansible.builtin.fail:
+      msg: The RHACM_API env variable is not defined
+    when: not lookup('ansible.builtin.env', 'RHACM_API')
+
+  - name: Check RHACM_TOKEN env variable
+    ansible.builtin.fail:
+      msg: The RHACM_TOKEN env variable is not defined
+    when: not lookup('ansible.builtin.env', 'RHACM_TOKEN')
+
+  - name: Debug controller_token variable
+    ansible.builtin.debug:
+      var: controller_token
+
+  #- meta: end_play
+
+  - name: "Create 'ACM' Credential Type"
+    awx.awx.credential_type:
+      name: "ACM"
+      kind: "cloud"
+      inputs: "{{ lookup('file', 'files/acm_credential_inputs.json') }}"
+      injectors: "{{ lookup('file', 'files/acm_credential_injector.json') }}"
+      state: present
+
+  - name: "Create 'ACM' Credential"
+    awx.awx.credential:
+      name: "ACM"
+      organization: "Default"
+      credential_type: "ACM"
+      inputs:
+        api_endpoint: "{{ rhacm_api }}"
+        api_token: "{{ rhacm_token }}"
+      state: present
+
+  - name: "Create 'Edge nodes' Credential"
+    awx.awx.credential:
+      name: "edge2"
+      organization: "Default"
+      credential_type: "Machine"
+      inputs:
+        username: "ec2-user"
+        ssh_key_data: "{{ ssh_key_priv }}"
+      state: present
+
+  - name: "Create 'Edge Demo Project' from this github project"
+    awx.awx.project:
+      name: "Edge Demo"
+      organization: "Default"
+      scm_type: "git"
+      scm_url: "{{ git_repo_url }}"
+      scm_update_on_launch: true
+      state: present
+      update_project: yes
+
+  - name: "Create Edge Inventory"
+    awx.awx.inventory:
+      name: "Edge Inventory"
+      organization: "Default"
+      state: present
+
+  - name: "Create Edge Job Template"
+    awx.awx.job_template:
+      name: "Edge Demo"
+      job_type: "run"
+      organization: "Default"
+      inventory: "Edge Inventory"
+      project: "Edge Demo"
+      playbook: "import-microshift-on-rhacm.yaml"
+      host_config_key: "{{ controller_host_config_key }}"
+      credentials:
+        - "ACM"
+      extra_vars:
+        EDGE: all
+      state: "present"
+
+  - name: Set the value of REMOTE_HOST_HEADERS to add HTTP_X_FORWARDED_FOR (required by systems behind a reverse proxy like cloud)
+    awx.awx.settings:
+      name: "REMOTE_HOST_HEADERS"
+      value:
+        - "REMOTE_ADDR"
+        - "REMOTE_HOST"
+        - "HTTP_X_FORWARDED_FOR"
+

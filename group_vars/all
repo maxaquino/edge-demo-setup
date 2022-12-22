@@ -1,0 +1,31 @@
+---
+
+git_repo_url: "https://github.com/maxaquino/import-microshift-on-rhacm.git"
+
+# Setup variables for Ansible
+controller_host: "{{ lookup('env', 'CONTROLLER_HOST') }}"
+# Used for the provisioning callback
+controller_token: "{{ lookup('env', 'CONTROLLER_TOKEN') }}"
+controller_host_config_key: "{{ lookup('env', 'CONTROLLER_HOST_CONFIG_KEY') }}"
+
+# Setup variables for ACM
+rhacm_api: "{{ lookup('env', 'RHACM_API') }}"
+rhacm_token: "{{ lookup('env', 'RHACM_TOKEN') }}"
+
+# RHSM credentials
+###subscription_username: ""
+###subscription_password: ""
+
+# OpenShift
+ocp_version: "4.12"
+openshift_pull_secret: ../files/openshift-pull-secret
+
+kubeconfig_file: $HOME/.kube/config
+microshift_kubeconfig_file: /var/lib/microshift/resources/kubeadmin/kubeconfig
+
+crio_dir: /etc/crio
+tempdir: /tmp
+policy_file: /etc/containers/policy.json
+
+# Node credentials
+ssh_key_priv: "{{ lookup('file','files/edge-key.pem') }}"

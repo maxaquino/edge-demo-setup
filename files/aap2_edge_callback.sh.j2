@@ -1,0 +1,29 @@
+#!/bin/bash
+
+AAP2_URL="{{ controller_host }}"
+AAP2_TOKEN={{ controller_token }}
+HOST_CONFIG_KEY={{ controller_host_config_key }}
+# Number of temporary inventory used for edge
+AAP2_INVENTORY={{ inventory_id }}
+# Number of job template used to finish the edge node configuration
+AAP2_JOB_TMPL={{ jobtemplate_id }}
+
+
+# Get the Serial Number to have a unique id for the vm...and strip out every dash to avoid issues with ansible
+SN=$( dmidecode -s system-serial-number | cut -f1 -d'-' )
+
+###HOSTNAME=edge${SN//-}
+HOSTNAME=edge-${SN}
+
+# Get the public hostname of the istance
+PUB_HOSTNAME=$( host -a $( dig +short myip.opendns.com @resolver1.opendns.com ) | grep "^[0-9].*PTR" | awk '{ print $5 }' )
+
+# Use ${PUB_HOSTNAME%.} To remove the trailing dot otherwise the second curl does not work because "Not matching host"
+
+### Modificare con il numero di inventory appropriato
+echo "Add host to the inventory"
+/bin/curl -s -k -d '{ "name": "'${HOSTNAME}'", "variables": "ansible_host: '${PUB_HOSTNAME%.}'" }' -H "Authorization: Bearer ${AAP2_TOKEN}" -H "Content-Type:application/json" -X POST ${AAP2_URL}/api/v2/inventories/${AAP2_INVENTORY}/hosts/
+
+# Modificare con il numero di job template appropriato
+echo "Job Template execution"
+/bin/curl -s -k -d '{"host_config_key": "'${HOST_CONFIG_KEY}'"}' -H "Authorization: Bearer ${AAP2_TOKEN}" -H "Content-Type:application/json" -X POST ${AAP2_URL}/api/v2/job_templates/${AAP2_JOB_TMPL}/callback/
