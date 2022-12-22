@@ -39,9 +39,9 @@
       msg: The RHACM_TOKEN env variable is not defined
     when: not lookup('ansible.builtin.env', 'RHACM_TOKEN')
 
-  - name: Debug controller_token variable
-    ansible.builtin.debug:
-      var: controller_token
+#  - name: Debug controller_token variable
+#    ansible.builtin.debug:
+#      var: controller_token
 
   #- meta: end_play
 
@@ -65,7 +65,7 @@
 
   - name: "Create 'Edge nodes' Credential"
     awx.awx.credential:
-      name: "edge2"
+      name: "Edge"
       organization: "Default"
       credential_type: "Machine"
       inputs:
@@ -100,6 +100,7 @@
       host_config_key: "{{ controller_host_config_key }}"
       credentials:
         - "ACM"
+        - "Edge"
       extra_vars:
         EDGE: all
       state: "present"
