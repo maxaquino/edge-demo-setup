@@ -167,6 +167,10 @@
         - crio
         - microshift
 
+    - name: 60 seconds pause to allow microshift to successfully start
+      ansible.builtin.pause:
+        seconds: 60
+
     - name: Create the .kube directory if it does not exist
       ansible.builtin.file:
         path: $HOME/.kube
