@@ -214,6 +214,20 @@
         owner: root
         group: root
 
+    - name: Enable loop0 service at startup
+      ansible.builtin.systemd:
+        name: create_loop0
+        enabled: yes
+
+    - name: Start aap2 callback service and disable at startup
+      ansible.builtin.systemd:
+        name: aap2_edge_callback
+        state: started
+        enabled: false
+
+    - meta: end_play
+
+# Below is not required
     - name: Enable aap2 callback and loop0 services
       ansible.builtin.systemd:
         name: '{{ item }}'
@@ -221,8 +235,6 @@
       loop:
         - aap2_edge_callback
         - create_loop0
-
-    - meta: end_play
 
     - name: Last reboot to run the ansible playbook and import the cluster to RHACM (Wait for 5 min)
       reboot:
