@@ -15,7 +15,7 @@
 
     - name: openshift_pull_secret
       prompt: OpenShift Pull Secret
-      private: false
+      private: true
 
   tasks:
 

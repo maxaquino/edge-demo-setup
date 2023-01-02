@@ -22,12 +22,12 @@ If not present on the bastion, please install ansible and awx client
 sudo dnf install -y ansible
 
 yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
-dnf install ansible-tower-cli
+sudo dnf install -y ansible-tower-cli
 ```
 
 Install awx cli and the collections required
-- yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
-- dnf install ansible-tower-cli
+- sudo yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
+- sudo dnf install -y ansible-tower-cli
 - ansible-galaxy collection install -r collections/requirements.yml
 - Populate the "hosts" inventory file with the name of the ec2 instance, the user and the ssh key
 
