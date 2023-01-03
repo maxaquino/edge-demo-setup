@@ -1,15 +1,25 @@
 # edge-demo-setup
 
+The environment is installed on AWS but can be adapted to any infrastructure with little changes.
+
+Below the playbooks in order of run.
+
 ## aap2-setup (playbook)
 Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
 
 ## edge-node-setup
 Run this playbook after the aap2-demo-setup playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM
 
+## import-to-rhacm
+A simple playbook to automate the Microshift cluster import on RHACM using Ansible Automation Platform.
+
+
 ## Requirements
 
 - Red Hat Advanced Cluster Management for Kubernetes
 - Red Hat Ansible Automation Platform
+- A token to connect to RHACM
+- A token to connect to Ansible Automation Platform
 - One or more EC2 instances to simulate an edge node
 
 The above playbooks should be run on a bastion which has access to the OpenShift instance where Ansible Automation Platform is deployed.
@@ -20,24 +30,21 @@ It will be used not only to connect to the ec2 instance but to create the edge n
 A username and password to access RHSM will be required.
 It will also be required to have a valid openshift-pull-secret.
 
-If not present on the bastion, please install ansible and awx client
+If not present on the bastion, please install ansible, awx client and collections required
 ```
-sudo dnf install -y ansible
+- sudo dnf install -y ansible
 
-yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
-sudo dnf install -y ansible-tower-cli
-```
-
-Install awx cli and the collections required
 - sudo yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
 - sudo dnf install -y ansible-tower-cli
 - ansible-galaxy collection install -r collections/requirements.yml
-- Populate the "hosts" inventory file with the name of the ec2 instance, the user and the ssh key
+```
+
+Populate the "hosts" inventory file accordingly with the name of the ec2 instance, the user and the ssh key
 
 
 *Set up environment variables*
 
-These environment variables must be provided before run the playbook
+These environment variables must be provided before run the "aap2-setup" playbook
 
 ```
 export CONTROLLER_HOST=<ansible automation controller URL>
