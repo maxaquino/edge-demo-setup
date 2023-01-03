@@ -68,7 +68,7 @@ ansible-playbook aap2-setup.yml
 
 ansible-playbook -i hosts edge-node-setup.yml
 
-No need to run the third script
+-- No need to run the third script --
 ```
 
 ## AAP Credentials Type for RHACM
