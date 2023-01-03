@@ -45,7 +45,7 @@ Populate the **hosts** inventory file accordingly with the name of the ec2 insta
 
 *Set up environment variables*
 
-These environment variables must be provided before run the "aap2-setup" playbook
+These environment variables must be provided before run the **aap2-setup** playbook
 
 ```
 export CONTROLLER_HOST=<ansible automation controller URL>
@@ -62,11 +62,13 @@ export RHACM_API=<rhacm url>
 export RHACM_TOKEN=<token to access rhacm>
 ```
 
-*Run the playbook*
+*Run the playbooks below from the bastion*
 ```
 ansible-playbook aap2-setup.yml
 
 ansible-playbook -i hosts edge-node-setup.yml
+
+No need to run the third script
 ```
 
 ## AAP Credentials Type for RHACM
