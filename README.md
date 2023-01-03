@@ -3,7 +3,7 @@
 The environment is installed on AWS but can be adapted to any infrastructure with little changes.
 
 
-Playbooks in order of run.
+Playbooks in order of run below.
 
 ## aap2-setup
 Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
