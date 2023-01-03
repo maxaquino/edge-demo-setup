@@ -5,13 +5,13 @@ The environment is installed on AWS but can be adapted to any infrastructure wit
 The below playbooks, in order of run, should be run on a bastion which has access to the OpenShift instance where Ansible Automation Platform is deployed.
 
 ## aap2-setup
-Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
+Run this playbook first to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
 
 ## edge-node-setup
-Run this playbook after the aap2-setup playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM
+Run this playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM using the ansible callback feature.
 
 ## import-to-rhacm
-A simple playbook to automate the Microshift cluster import on RHACM using Ansible Automation Platform.
+This playbook will be invoked by the edge node in order to import Microshift to RHACM using Ansible Automation Platform.
 
 
 ## Requirements
@@ -22,25 +22,25 @@ A simple playbook to automate the Microshift cluster import on RHACM using Ansib
 - A token to connect to Ansible Automation Platform
 - One or more EC2 instances to simulate edge nodes
 
-Copy the content of the ec2 instance's ssh key created to files/edge-key.pem file.
+Copy the content of the ec2 instance's ssh key created to **files/edge-key.pem** file.
 
 It will be used either to connect to the ec2 instance(s) and to create the edge node(s) credential on AAP.
 
 A username and password to access RHSM (Red Hat Subscription Manager) will be required.
 
-It will also be required to have a valid openshift-pull-secret.
+It will also be required to have a valid **openshift-pull-secret**.
 
 
 If not present on the bastion, please install ansible, awx client and collections required
 ```
-- sudo dnf install -y ansible
+sudo dnf install -y ansible
 
-- sudo yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
-- sudo dnf install -y ansible-tower-cli
-- ansible-galaxy collection install -r collections/requirements.yml
+sudo yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
+sudo dnf install -y ansible-tower-cli
+ansible-galaxy collection install -r collections/requirements.yml
 ```
 
-Populate the "hosts" inventory file accordingly with the name of the ec2 instance, the user and the ssh key.
+Populate the **hosts** inventory file accordingly with the name of the ec2 instance, the user and the ssh key.
 
 
 *Set up environment variables*
