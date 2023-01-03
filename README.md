@@ -2,13 +2,13 @@
 
 The environment is installed on AWS but can be adapted to any infrastructure with little changes.
 
-Below the playbooks in order of run.
+The below playbooks, in order of run, should be run on a bastion which has access to the OpenShift instance where Ansible Automation Platform is deployed.
 
-## aap2-setup (playbook)
+## aap2-setup
 Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
 
 ## edge-node-setup
-Run this playbook after the aap2-demo-setup playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM
+Run this playbook after the aap2-setup playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM
 
 ## import-to-rhacm
 A simple playbook to automate the Microshift cluster import on RHACM using Ansible Automation Platform.
@@ -20,15 +20,16 @@ A simple playbook to automate the Microshift cluster import on RHACM using Ansib
 - Red Hat Ansible Automation Platform
 - A token to connect to RHACM
 - A token to connect to Ansible Automation Platform
-- One or more EC2 instances to simulate an edge node
+- One or more EC2 instances to simulate edge nodes
 
-The above playbooks should be run on a bastion which has access to the OpenShift instance where Ansible Automation Platform is deployed.
+Copy the content of the ec2 instance's ssh key created to files/edge-key.pem file.
 
-Copy the content of the ec2 instance to files/edge-key.pem file.
-It will be used not only to connect to the ec2 instance but to create the edge node credential on ansible too.
+It will be used either to connect to the ec2 instance(s) and to create the edge node(s) credential on AAP.
 
-A username and password to access RHSM will be required.
+A username and password to access RHSM (Red Hat Subscription Manager) will be required.
+
 It will also be required to have a valid openshift-pull-secret.
+
 
 If not present on the bastion, please install ansible, awx client and collections required
 ```
@@ -39,7 +40,7 @@ If not present on the bastion, please install ansible, awx client and collection
 - ansible-galaxy collection install -r collections/requirements.yml
 ```
 
-Populate the "hosts" inventory file accordingly with the name of the ec2 instance, the user and the ssh key
+Populate the "hosts" inventory file accordingly with the name of the ec2 instance, the user and the ssh key.
 
 
 *Set up environment variables*
