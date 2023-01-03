@@ -4,6 +4,10 @@
   remote_user: ec2-user
   become: true
 
+  vars:
+    sleep_time: 10
+    HOST_COUNT: "{{ ansible_play_hosts * sleep_time }}"
+
   vars_prompt:
 
     - name: subscription_username
@@ -167,9 +171,9 @@
         - crio
         - microshift
 
-    - name: 60 seconds pause to allow microshift to successfully start
+    - name: "{{ HOST_COUNT }}" seconds pause to allow microshift to successfully start
       ansible.builtin.pause:
-        seconds: 60
+        seconds: "{{ HOST_COUNT }}"
 
     - name: Create the .kube directory if it does not exist
       ansible.builtin.file:
