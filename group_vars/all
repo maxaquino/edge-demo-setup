@@ -1,7 +1,7 @@
 ---
 
-git_repo_url: "https://github.com/maxaquino/import-microshift-on-rhacm.git"
-
+git_repo_url: "https://github.com/maxaquino/edge-demo-setup.git"
+playbook_to_run: import-to-rhacm.yml
 # Setup variables for Ansible
 controller_host: "{{ lookup('env', 'CONTROLLER_HOST') }}"
 # Used for the provisioning callback
