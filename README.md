@@ -1,13 +1,25 @@
 # edge-demo-setup
 
-## aap2-setup (playbook)
-Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
 The environment is installed on AWS but can be adapted to any infrastructure with little changes.
 
-## edge-node-setup (playbook)
+
+Playbooks in order of run.
+
+## aap2-setup
+Run this playbook to setup the Ansible Automation Platform on OpenShift to be used for the ACM + AAP2 + MICRSOHIFT + EDGE demo
+
+## edge-node-setup
 Run this playbook after the aap2-demo-setup playbook to setup and configure the edge node to host microshift and to be imported automagically to RHACM
 
+## import-to-rhacm
+A simple playbook to automate the Microshift cluster import on RHACM using Ansible Automation Platform.
+
+
 ## Requirements
+
+- Red Hat Advanced Cluster Management for Kubernetes
+- Red Hat Ansible Automation Platform
+- One or more EC2 instances to simulate an edge node
 
 The above playbooks should be run on a bastion which has access to the OpenShift instance where Ansible Automation Platform is deployed.
 
@@ -56,4 +68,32 @@ export RHACM_TOKEN=<token to access rhacm>
 ansible-playbook aap2-setup.yml
 
 ansible-playbook -i hosts edge-node-setup.yml
+```
+
+## AAP Credentials Type for RHACM
+The login information for Red Hat Advanced Cluster Management  must be saved in Tower using a custom credentials type defined as follows.
+
+*INPUT CONFIGURATION:*
+
+```yaml
+fields:
+  - id: api_endpoint
+    type: string
+    label: API Endpoint
+  - id: api_token
+    type: string
+    label: API Token
+    secret: true
+required:
+  - api_endpoint
+  - api_token
+```
+
+
+*INJECTOR CONFIGURATION:*
+
+```yaml
+extra_vars:
+  rhacm_api: '{{ api_endpoint }}'
+  rhacm_token: '{{ api_token }}'
 ```

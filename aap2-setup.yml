@@ -96,7 +96,7 @@
       organization: "Default"
       inventory: "Edge Inventory"
       project: "Edge Demo"
-      playbook: "import-microshift-on-rhacm.yaml"
+      playbook: "{{ playbook_to_run }}"
       host_config_key: "{{ controller_host_config_key }}"
       credentials:
         - "ACM"

@@ -1,0 +1,166 @@
+---
+- name: Import microshift from edge servers
+  hosts: "{{ EDGE }}"
+  become: yes
+  become_user: root
+  vars:
+    serviceaccount: rhacm
+
+  tasks:
+  - name: install pre-requisites
+    pip:
+      name:
+        - openshift
+        - pyyaml
+        - kubernetes
+
+  - name: Get the EC2 Public IP
+    shell: dig +short myip.opendns.com @resolver1.opendns.com
+    register: pip
+
+  #
+  # managed-cluster: Create a serviceaccount and get the token
+  #
+
+  - name: Create a k8s serviceaccount
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        api_version: v1
+        kind: ServiceAccount
+        metadata:
+          name: "{{ serviceaccount }}"
+          namespace: kube-system
+
+  - name: Create a k8s clusterrolebinding
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: "{{ serviceaccount }}"
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+        -  kind: ServiceAccount
+           name: "{{ serviceaccount }}"
+           namespace: kube-system
+
+# Since k8s 1.24 you need to manually create a token for a serviceaccount
+# That is: when you create a serviceaccount, the secret is not created anymore
+  - name: Create a serviceaccount token
+    shell: kubectl create token "{{ serviceaccount }}" --namespace=kube-system
+    register: token
+
+  - set_fact:
+      stoken={{ token.stdout }}
+
+  - set_fact:
+      spip={{ pip.stdout }}
+
+  - set_fact:
+      shost={{ inventory_hostname }}
+  
+  - set_fact:
+      snamespace="micro-{{ shost }}"
+
+  - set_fact:
+      sclustername="micro-{{ shost }}"
+
+  - name: Debug host
+    debug: var=shost
+
+  - name: Debug token
+    debug: var=stoken
+
+  - name: Debug public ip
+    debug: var=spip
+
+  - name: Debug namespace
+    debug: var=snamespace
+
+  - name: Debug clustername
+    debug: var=sclustername
+
+  - name: Pause for 5 seconds to allow for the edge hosts to be available
+    ansible.builtin.pause:
+      seconds: 5
+
+  - name: Create a k8s namespace
+    kubernetes.core.k8s:
+      host: "{{ rhacm_api }}"
+      api_key: "{{ rhacm_token }}"
+      validate_certs: no
+      definition:
+        api_version: v1
+        kind: Namespace
+        state: present
+        metadata:
+          name: "{{ snamespace }}"
+          labels:
+            cluster.open-cluster-management.io/managedCluster: "{{ snamespace }}"
+
+  - name: Pause for 10 seconds to allow for the namespace creation
+    ansible.builtin.pause:
+      seconds: 10
+
+  - name: managed cluster
+    kubernetes.core.k8s:
+      host: "{{ rhacm_api }}"
+      api_key: "{{ rhacm_token }}"
+      validate_certs: no
+      definition:
+        apiVersion: cluster.open-cluster-management.io/v1
+        kind: ManagedCluster
+        state: present
+        metadata:
+          name: "{{ sclustername }}"
+          labels:
+            cloud: auto-detect
+            vendor: auto-detect
+        spec:
+          hubAcceptsClient: true
+
+  - name: auto import cluster
+    kubernetes.core.k8s:
+      host: "{{ rhacm_api }}"
+      api_key: "{{ rhacm_token }}"
+      validate_certs: no
+      definition:
+        apiVersion: v1
+        kind: Secret
+        state: present
+        metadata:
+          name: auto-import-secret
+          namespace: "{{ snamespace }}"
+        stringData:
+          autoImportRetry: "5"
+          token: "{{ stoken }}"
+          server: "https://{{ spip }}:6443"
+        type: Opaque
+
+  - name: agent open-cluster-management
+    kubernetes.core.k8s:
+      host: "{{ rhacm_api }}"
+      api_key: "{{ rhacm_token }}"
+      validate_certs: no
+      definition:
+        apiVersion: agent.open-cluster-management.io/v1
+        kind: KlusterletAddonConfig
+        metadata:
+          name: "{{ sclustername }}"
+          namespace: "{{ snamespace }}"
+        spec:
+          applicationManager:
+            enabled: true
+          certPolicyController:
+            enabled: true
+          iamPolicyController:
+            enabled: true
+          policyController:
+            enabled: true
+          searchCollector:
+            enabled: true
