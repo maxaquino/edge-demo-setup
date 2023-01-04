@@ -5,8 +5,8 @@
   become: true
 
   vars:
-    sleep_time: 10
-    HOST_COUNT: "{{ ansible_play_hosts * sleep_time }}"
+    HOST_COUNT: "{{ ansible_play_hosts | length }}"
+    sleep_time: "{{ HOST_COUNT * 10 }}"
 
   vars_prompt:
 
@@ -171,9 +171,9 @@
         - crio
         - microshift
 
-    - name: "{{ HOST_COUNT }} seconds pause to allow microshift to successfully start"
+    - name: "{{ sleep_time }} seconds pause to allow microshift to successfully start"
       ansible.builtin.pause:
-        seconds: "{{ HOST_COUNT }}"
+        seconds: "{{ sleep_time }}"
 
     - name: Create the .kube directory if it does not exist
       ansible.builtin.file:
