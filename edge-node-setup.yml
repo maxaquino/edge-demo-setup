@@ -5,8 +5,7 @@
   become: true
 
   vars:
-    HOST_COUNT: "{{ ansible_play_hosts | length }}"
-    sleep_time: "{{ HOST_COUNT * 10 }}"
+    sleep_time: 20
 
   vars_prompt:
 
