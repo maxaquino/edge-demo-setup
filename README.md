@@ -33,10 +33,8 @@ It will also be required to have a valid **openshift-pull-secret**.
 
 If not present on the bastion, please install ansible, awx client and collections required
 ```
-sudo dnf install -y ansible
-
 sudo yum-config-manager --add-repo https://releases.ansible.com/ansible-tower/cli/ansible-tower-cli-el8.repo
-sudo dnf install -y ansible-tower-cli
+sudo dnf install -y ansible ansible-tower-cli
 ansible-galaxy collection install -r collections/requirements.yml
 ```
 

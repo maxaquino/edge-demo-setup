@@ -1,0 +1,11 @@
+OLD
+NOTES
+*.ORIG
+*.yaml.*
+*.yml.*
+throw_me
+utils
+version
+*.tar.gz
+files/openshift-pull-secret
+files/edge-key.pem
