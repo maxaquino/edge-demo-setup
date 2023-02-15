@@ -104,16 +104,8 @@
     - name: Enable repositories
       community.general.rhsm_repository:
         name:
-          #- "rhocp-{{ ocp_version }}-for-rhel-8-x86_64-rpms"
-          - "rhocp-4.11-for-rhel-8-x86_64-rpms" # Necessario perche' 4.12 restituisce un errore
+          - "rhocp-{{ ocp_version }}-for-rhel-8-x86_64-rpms"
           - fast-datapath-for-rhel-8-x86_64-rpms
-
-    # Enable copr for microshift
-    - name: Enable copr for microshift
-      community.general.copr:
-        state: enabled
-        name: '@redhat-et/microshift-testing'
-        chroot: epel-8-x86_64
 
     - name: Install microshift and other packages
       ansible.builtin.dnf:
@@ -128,23 +120,13 @@
         state: present
         disable_gpg_check: true
 
-    # Sometime it seems is not required because the KeyPaths with multiple keys works.
-    # To test, try to pull an image with crictl (crictl pull busybox) to see if it returns an error on the KeyPaths
-    - name: Fix KeyPaths issue
-      ansible.builtin.replace:
-        path: '{{ policy_file }}'
-        regexp: '^(.*)"keyPaths.*'
-        replace: '\1"keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"'
-      tags: [ replace ]
-
-#    - meta: end_play
-
     - name: Copy the openshift pull secret
       ansible.builtin.copy:
         content: '{{ openshift_pull_secret }}'
         dest: '{{ crio_dir }}/openshift-pull-secret'
         mode: 0600
 
+    # This is required as microshift needs a vg to correctly function
     - name: Creating a fake vg rhel for microshift
       ansible.builtin.command: "{{ item }}"
       loop:
@@ -158,8 +140,6 @@
         vg: rhel
         pvs: /dev/loop0
         force: true
-
-    #- meta: end_play
 
     - name: Enable crio and microshift
       ansible.builtin.systemd:
@@ -226,15 +206,7 @@
         name: create_loop0
         enabled: yes
 
-    - name: Start aap2 callback service and disable at startup
-      ansible.builtin.systemd:
-        name: aap2_edge_callback
-        state: started
-        enabled: false
-
-    - meta: end_play
-
-# Below is not required
+    # Use the blocks below to simulate a new attached edge device
     - name: Enable aap2 callback and loop0 services
       ansible.builtin.systemd:
         name: '{{ item }}'
@@ -243,7 +215,5 @@
         - aap2_edge_callback
         - create_loop0
 
-    - name: Last reboot to run the ansible playbook and import the cluster to RHACM (Wait for 5 min)
-      reboot:
-        reboot_timeout: 300
-
+    - name: Shutdown all ec2 instances
+      community.general.shutdown:

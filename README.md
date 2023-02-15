@@ -22,7 +22,7 @@ This playbook will be invoked by the edge node in order to import Microshift to 
 - A token to connect to Ansible Automation Platform
 - One or more EC2 instances to simulate edge nodes
 
-Copy the content of the ec2 instance's ssh key created to **files/edge-key.pem** file.
+Copy the content of the ec2 instance's ssh key created to **files/edge-key.pem** file and change the permission to 0600.
 
 It will be used either to connect to the ec2 instance(s) and to create the edge node(s) credential on AAP.
 
@@ -66,7 +66,7 @@ ansible-playbook aap2-setup.yml
 
 ansible-playbook -i hosts edge-node-setup.yml
 
--- No need to run the third script --
+-- No need to run the third script that will be invoked via callback from AAP --
 ```
 
 ## AAP Credentials Type for RHACM
