@@ -201,11 +201,6 @@
         owner: root
         group: root
 
-    - name: Enable loop0 service at startup
-      ansible.builtin.systemd:
-        name: create_loop0
-        enabled: yes
-
     # Use the blocks below to simulate a new attached edge device
     - name: Enable aap2 callback and loop0 services
       ansible.builtin.systemd:
